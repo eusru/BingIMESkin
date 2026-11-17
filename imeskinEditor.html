@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>输入法皮肤预览</title>
+<style>
+:root{--bg:#f6f6f4;--card:#fff;--ink:#1f1f1f;--mute:#6b6b6b;--line:#dcdcd6;--accent:#0b57d0;--warn:#b3261e;
+  box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#17181a;--card:#222426;--ink:#ececea;--mute:#a0a09a;--line:#38393c;--accent:#8ab4f8;--warn:#f2b8b5}}
+:root[data-theme="dark"]{--bg:#17181a;--card:#222426;--ink:#ececea;--mute:#a0a09a;--line:#38393c;--accent:#8ab4f8;--warn:#f2b8b5}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.6 system-ui,-apple-system,"PingFang SC","Noto Sans CJK SC","Microsoft YaHei",sans-serif}
+main{max-width:1340px;margin:0 auto;padding:24px 16px 48px}
+h1{font-size:22px;margin:0 0 4px}
+h2{font-size:15px;margin:0 0 10px}
+p.sub{margin:0 0 20px;color:var(--mute)}
+section{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px;margin-bottom:16px}
+.row{display:flex;flex-wrap:wrap;gap:12px 20px;align-items:center}
+label{display:flex;gap:8px;align-items:center;font-size:14px}
+label.col{flex-direction:column;align-items:flex-start;gap:4px}
+input[type=text],select{font:inherit;padding:5px 8px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink)}
+input[type=text]{width:200px}
+button{font:inherit;padding:6px 12px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink);cursor:pointer}
+button:hover{border-color:var(--accent)}
+#status{font-size:13px;color:var(--mute);margin-top:10px;white-space:pre-wrap}
+#status .bad{color:var(--warn)}
+.stage{border-radius:8px;padding:28px;overflow-x:auto;min-height:150px;border:1px solid var(--line)}
+.stage.light{background:#f3f3f3}.stage.dark{background:#202020}
+.stage.check{background:conic-gradient(#e6e6e6 25%,#fff 0 50%,#e6e6e6 0 75%,#fff 0) 0 0/20px 20px}
+.zoomwrap{display:inline-block;transform-origin:0 0}
+.note{font-size:12.5px;color:var(--mute);margin:10px 0 0}
+.extras{display:flex;flex-wrap:wrap;gap:24px;align-items:flex-start}
+.extras small{display:block;font-size:12px;color:var(--mute);margin-bottom:6px}
+.grid{display:grid;gap:16px}
+@media (min-width:960px){.grid{grid-template-columns:minmax(0,1.25fr) minmax(340px,1fr);align-items:start}.leftcol,.editor{position:sticky;top:8px;max-height:calc(100vh - 16px);overflow:auto}}
+.editor details{border-top:1px solid var(--line);padding:6px 0}
+.editor summary{cursor:pointer;font-size:13.5px;font-weight:600}
+.erow{display:flex;flex-wrap:wrap;gap:4px 10px;align-items:center;padding:4px 0 4px 8px;font-size:13px}
+.erow .lb{flex:1 1 150px;min-width:0;word-break:break-all}
+.erow .at{color:var(--mute);font-size:12px;margin-left:6px}
+.erow input[type=number]{width:58px}.erow input[type=text]{width:150px}.erow input[type=range]{width:90px}
+.erow input[type=color]{width:34px;height:26px;padding:0;border:1px solid var(--line);border-radius:4px;background:none}
+textarea#out{width:100%;height:200px;font:12px/1.4 ui-monospace,Consolas,monospace;margin-top:8px;background:var(--bg);color:var(--ink);border:1px solid var(--line);border-radius:6px}
+.hl-pv{outline:2.5px dashed var(--accent);outline-offset:3px;position:relative;z-index:5}
+.hl-ed{box-shadow:inset 4px 0 0 var(--accent)}
+.hl-grp{box-shadow:inset 3px 0 0 var(--accent)}
+.hl-grp>summary{color:var(--accent) !important}
+</style>
+</head>
+<body>
+<main>
+<h1>输入法皮肤预览与编辑</h1>
+<p class="sub">加载 skin.xml（schemas.microsoft.com/ime/skin/1.0 格式），近似渲染候选窗、提示和注释窗，并可在右侧编辑各项参数，预览实时更新，最后导出修改后的 XML。所有处理都在浏览器本地完成，文件不会上传。</p>
+
+<section>
+  <h2>1. 载入文件</h2>
+  <div class="row">
+    <label class="col">skin.xml<input id="xml" type="file" accept=".xml,text/xml"></label>
+    <label class="col">图片素材（可多选，文件名要与 XML 中的 source 一致）<input id="png" type="file" accept="image/png,image/*" multiple></label>
+    <select id="presets"><option value="">-- 内置皮肤 --</option><option value="sample">默认 (白底黑字)</option><option value="latte">Catppuccin Latte</option><option value="frappe">Catppuccin Frappé</option><option value="macchiato">Catppuccin Macchiato</option><option value="mocha">Catppuccin Mocha</option><option value="mac-light">macOS 浅色</option><option value="mac-dark">macOS 深色</option></select>
+    <label title="浅色系统自动载入 Latte，深色系统自动载入 Mocha"><input id="autoTheme" type="checkbox" checked> 跟随系统</label>
+  </div>
+  <div id="status">尚未载入文件。</div>
+</section>
+
+<div class="grid"><div class="leftcol">
+<section>
+  <h2>2. 预览</h2>
+  <div class="row" style="margin-bottom:14px">
+    <label>拼音<input id="pinyin" type="text" value="ni hao"></label>
+    <label>候选词（逗号分隔）<input id="cands" type="text" value="你好,尼好,泥号,拟好,你号"></label>
+    <label>背景<select id="bg"><option value="light">浅色</option><option value="dark">深色</option><option value="check">棋盘格</option></select></label>
+    <label>缩放<input id="zoom" type="range" min="0.5" max="3" step="0.25" value="1.5"><span id="zv">150%</span></label>
+    <label><input id="hc" type="checkbox">高对比度颜色</label>
+  </div>
+  <div id="stagebox" class="stage light"><div id="zw" class="zoomwrap"><div id="stage"></div></div></div>
+  <p class="note">鼠标移到候选项上看 hover，按住看 down，点击切换高亮项。翻页按钮第一个为禁用态，用来检查 disabled 颜色。padding 的顺序按“左,上,右,下”理解，这是推测，如果和真实输入法对不上，以真实效果为准。</p>
+</section>
+
+<section>
+  <h2>3. 其他窗口</h2>
+  <div class="stage light" id="exbox"><div class="extras" id="extras"></div></div>
+</section>
+</div>
+<section class="editor">
+  <h2>4. 参数编辑</h2>
+  <div class="row"><button id="reset" type="button">恢复原始</button><button id="export" type="button">导出 XML</button><button id="copy" type="button">复制</button><span id="copied" class="note"></span></div>
+  <p class="note">改动会立刻反映到左侧预览。颜色项含不透明度（0 到 255）。建议窗、菜单、开启提示面板等暂未预览，改动只写入导出的 XML。</p>
+  <textarea id="out" hidden readonly></textarea>
+  <div id="editor"><p class="note">载入 skin.xml 或内置示例后，这里会列出可编辑的参数。</p></div>
+</section>
+</div>
+</main>
+
+<script>
+const SAMPLE=`<?xml version="1.0" encoding="utf-8"?>
+<skin name="示例（内置，精简版）" version="2.0" author="demo" xmlns="http://schemas.microsoft.com/ime/skin/1.0">
+<input-window padding="16,8,16,24" gap="0"><background corner-radius="12" frame-thickness="1"><color id="face" rgba="255,255,255,255" a11y-syscolor="window"/><color id="frame" rgba="0,0,0,36" a11y-syscolor="windowtext"/></background></input-window>
+<tooltip padding="8,4,8,4" corner-radius="4"><font family="Microsoft YaHei" size="12" line-height="16" style="regular"/><color id="background" rgb="255,255,255" a11y-syscolor="window"/><color id="text" rgb="36,36,36" a11y-syscolor="windowtext"/></tooltip>
+<candidate-window padding="4,4,4,4" gap="2">
+<color id="activeIconColor" rgb="36,36,36" a11y-syscolor="windowtext"/><color id="pressedIconColor" rgb="36,36,36" a11y-syscolor="highlighttext"/><color id="disabledIconColor" rgba="0,0,0,110" a11y-syscolor="graytext"/><color id="hoverBackgroundColor" rgb="245,245,245" a11y-syscolor="highlight"/>
+<header><font size="14" line-height="20" family="Microsoft YaHei UI"/><color id="text" rgb="36,36,36" a11y-syscolor="windowtext"/></header>
+<candidate-string padding="6,4,8,4" min-width="32" min-height="30"><font size="16" line-height="22" family="Microsoft YaHei UI"/><font id="index" size="16" line-height="22" family="Microsoft YaHei UI"/>
+<color id="text" rgb="36,36,36" a11y-syscolor="windowtext"/><color id="index" rgb="112,112,112" a11y-syscolor="graytext"/><background corner-radius="8"><color id="fill" rgba="0,0,0,0"/></background>
+<state id="down"><color id="text" rgb="36,36,36"/><color id="index" rgb="112,112,112"/><background><color id="fill" rgb="245,245,245"/></background></state>
+<state id="highlight"><color id="text" rgb="255,255,255"/><color id="index" rgb="255,255,255"/><background><color id="fill" rgb="36,36,36"/></background></state>
+<state id="highlight-down"><color id="text" rgb="255,255,255"/><color id="index" rgb="255,255,255"/><background><color id="fill" rgb="36,36,36"/></background></state>
+<state id="hover"><color id="text" rgb="36,36,36"/><color id="index" rgb="112,112,112"/><background><color id="fill" rgb="245,245,245"/></background></state></candidate-string>
+<separator><color id="face" rgba="0,0,0,33" a11y-syscolor="graytext"/></separator>
+<symbol-button id="pageup"><symbol><path viewBox="0 0 16 16" d="M9.42784 11.8403C10.0909 12.2987 10.9989 11.8272 10.9989 11.0244V4.9756C10.9989 4.17287 10.0909 3.70133 9.42784 4.15974L5.64342 6.77622C4.78555 7.36933 4.78555 8.6307 5.64342 9.22382L9.42784 11.8403Z"/></symbol><color id="symbol" ref="activeIconColor"/><background frame-thickness="0"/>
+<state id="hover"><background corner-radius="8"><color id="face" ref="hoverBackgroundColor"/></background></state><state id="down"><color id="symbol" ref="pressedIconColor"/><background corner-radius="8"><color id="face" ref="hoverBackgroundColor"/></background></state><state id="disabled"><color id="symbol" ref="disabledIconColor"/></state></symbol-button>
+<symbol-button id="pagedown"><symbol><path viewBox="0 0 16 16" d="M7.57107 11.8403C6.90803 12.2987 6 11.8272 6 11.0244V4.9756C6 4.17287 6.90803 3.70133 7.57106 4.15974L11.3555 6.77622C12.2133 7.36933 12.2134 8.6307 11.3555 9.22382L7.57107 11.8403Z"/></symbol><color id="symbol" ref="activeIconColor"/><background frame-thickness="0"/>
+<state id="hover"><background corner-radius="8"><color id="face" ref="hoverBackgroundColor"/></background></state><state id="down"><color id="symbol" ref="pressedIconColor"/><background corner-radius="8"><color id="face" ref="hoverBackgroundColor"/></background></state></symbol-button>
+</candidate-window>
+<annotation-window padding="12,8,12,12" gap="4" max-width="362"><annotation-text><font size="14" line-height="20" family="Microsoft YaHei UI"/><color id="text" rgba="0,0,0,143" a11y-syscolor="windowtext"/></annotation-text></annotation-window>
+</skin>`;
+
+const CAT={
+latte:{name:'Catppuccin Latte',dark:false,base:'239,241,245',mantle:'230,233,239',crust:'220,224,232',surface0:'204,208,218',surface1:'188,192,204',surface2:'172,176,190',overlay0:'156,160,176',text:'76,79,105',subtext0:'108,111,133',subtext1:'92,95,119',blue:'30,102,245',lavender:'114,135,253'},
+frappe:{name:'Catppuccin Frappé',dark:true,base:'48,52,70',mantle:'41,44,60',crust:'35,38,52',surface0:'65,69,89',surface1:'81,87,109',surface2:'98,104,128',overlay0:'115,121,148',text:'198,208,245',subtext0:'165,173,206',subtext1:'181,191,226',blue:'140,170,238',lavender:'186,187,241'},
+macchiato:{name:'Catppuccin Macchiato',dark:true,base:'36,39,58',mantle:'30,32,48',crust:'24,25,38',surface0:'54,58,79',surface1:'73,77,100',surface2:'91,96,120',overlay0:'110,115,141',text:'202,211,245',subtext0:'165,173,203',subtext1:'184,192,224',blue:'138,173,244',lavender:'183,189,248'},
+mocha:{name:'Catppuccin Mocha',dark:true,base:'30,30,46',mantle:'24,24,37',crust:'17,17,27',surface0:'49,50,68',surface1:'69,71,90',surface2:'88,91,112',overlay0:'108,112,134',text:'205,214,244',subtext0:'166,173,200',subtext1:'186,194,222',blue:'137,180,250',lavender:'180,190,254'}
+};
+const MAC={
+'mac-light':{name:'macOS Light',dark:false},
+'mac-dark':{name:'macOS Dark',dark:true}
+};
+function macSkin(dark){
+const c=dark
+?{face:'40,40,40,250',frame:'255,255,255,30',mantle:'30,30,30',text:'255,255,255',subtext0:'180,180,180',subtext1:'200,200,200',
+  index:'170,170,170',hlBg:'0,122,255',hlText:'255,255,255',hoverBg:'255,255,255,20',downBg:'255,255,255,30',
+  surface0:'60,60,60',surface1:'70,70,70',overlay0:'100,100,100',sep:'255,255,255,40',annot:'180,180,180,200'}
+:{face:'255,255,255,245',frame:'0,0,0,18',mantle:'244,244,244',text:'38,38,38',subtext0:'120,120,120',subtext1:'80,80,80',
+  index:'140,140,140',hlBg:'0,122,255',hlText:'255,255,255',hoverBg:'0,0,0,8',downBg:'0,0,0,16',
+  surface0:'232,232,232',surface1:'220,220,220',overlay0:'170,170,170',sep:'0,0,0,30',annot:'120,120,120,200'};
+return `<?xml version="1.0" encoding="utf-8"?>
+<skin name="macOS ${dark?'Dark':'Light'}" version="2.0" author="macOS Style" xmlns="http://schemas.microsoft.com/ime/skin/1.0">
+<input-window padding="16,8,16,24" gap="0"><background corner-radius="10" frame-thickness="0"><color id="face" rgba="${c.face}" a11y-syscolor="window"/><color id="frame" rgba="${c.frame}" a11y-syscolor="windowtext"/></background></input-window>
+<tooltip padding="8,5,8,5" corner-radius="6"><font family="Microsoft YaHei" size="12" line-height="16" style="regular"/><color id="background" rgb="${c.mantle}" a11y-syscolor="window"/><color id="text" rgb="${c.text}" a11y-syscolor="windowtext"/></tooltip>
+<candidate-window padding="6,4,6,4" gap="0">
+<color id="activeIconColor" rgb="${c.text}" a11y-syscolor="windowtext"/><color id="pressedIconColor" rgb="${c.text}" a11y-syscolor="highlighttext"/><color id="disabledIconColor" rgba="${c.overlay0},140" a11y-syscolor="graytext"/><color id="hoverBackgroundColor" rgba="${c.hoverBg}" a11y-syscolor="highlight"/>
+<header><font size="13" line-height="18" family="Microsoft YaHei UI"/><color id="text" rgb="${c.subtext1}" a11y-syscolor="windowtext"/></header>
+<candidate-string padding="4,4,6,4" min-width="28" min-height="28"><font size="16" line-height="22" family="Microsoft YaHei UI"/><font id="index" size="14" line-height="20" family="Microsoft YaHei UI"/>
+<color id="text" rgb="${c.text}" a11y-syscolor="windowtext"/><color id="index" rgb="${c.index}" a11y-syscolor="graytext"/><background corner-radius="6"><color id="fill" rgba="0,0,0,0"/></background>
+<state id="down"><color id="text" rgb="${c.text}"/><color id="index" rgb="${c.index}"/><background><color id="fill" rgba="${c.downBg}"/></background></state>
+<state id="highlight"><color id="text" rgb="${c.hlText}"/><color id="index" rgb="${c.hlText}"/><background><color id="fill" rgb="${c.hlBg}"/></background></state>
+<state id="highlight-down"><color id="text" rgb="${c.hlText}"/><color id="index" rgb="${c.hlText}"/><background><color id="fill" rgb="0,105,220"/></background></state>
+<state id="hover"><color id="text" rgb="${c.text}"/><color id="index" rgb="${c.index}"/><background><color id="fill" rgba="${c.hoverBg}"/></background></state></candidate-string>
+<separator><color id="face" rgba="${c.sep}" a11y-syscolor="graytext"/></separator>
+<symbol-button id="pageup"><symbol><path viewBox="0 0 16 16" d="M9.42784 11.8403C10.0909 12.2987 10.9989 11.8272 10.9989 11.0244V4.9756C10.9989 4.17287 10.0909 3.70133 9.42784 4.15974L5.64342 6.77622C4.78555 7.36933 4.78555 8.6307 5.64342 9.22382L9.42784 11.8403Z"/></symbol><color id="symbol" ref="activeIconColor"/><background frame-thickness="0"/>
+<state id="hover"><background corner-radius="6"><color id="face" ref="hoverBackgroundColor"/></background></state><state id="down"><color id="symbol" ref="pressedIconColor"/><background corner-radius="6"><color id="face" ref="hoverBackgroundColor"/></background></state><state id="disabled"><color id="symbol" ref="disabledIconColor"/></state></symbol-button>
+<symbol-button id="pagedown"><symbol><path viewBox="0 0 16 16" d="M7.57107 11.8403C6.90803 12.2987 6 11.8272 6 11.0244V4.9756C6 4.17287 6.90803 3.70133 7.57106 4.15974L11.3555 6.77622C12.2133 7.36933 12.2134 8.6307 11.3555 9.22382L7.57107 11.8403Z"/></symbol><color id="symbol" ref="activeIconColor"/><background frame-thickness="0"/>
+<state id="hover"><background corner-radius="6"><color id="face" ref="hoverBackgroundColor"/></background></state><state id="down"><color id="symbol" ref="pressedIconColor"/><background corner-radius="6"><color id="face" ref="hoverBackgroundColor"/></background></state></symbol-button>
+</candidate-window>
+<annotation-window padding="12,8,12,12" gap="4" max-width="362"><annotation-text><font size="13" line-height="18" family="Microsoft YaHei UI"/><color id="text" rgba="${c.annot}" a11y-syscolor="windowtext"/></annotation-text></annotation-window>
+</skin>`}
+function catSkin(c){return `<?xml version="1.0" encoding="utf-8"?>
+<skin name="${c.name}" version="2.0" author="Catppuccin" xmlns="http://schemas.microsoft.com/ime/skin/1.0">
+<input-window padding="16,8,16,24" gap="0"><background corner-radius="12" frame-thickness="1"><color id="face" rgba="${c.base},255" a11y-syscolor="window"/><color id="frame" rgba="${c.surface2},80" a11y-syscolor="windowtext"/></background></input-window>
+<tooltip padding="8,4,8,4" corner-radius="6"><font family="Microsoft YaHei" size="12" line-height="16" style="regular"/><color id="background" rgb="${c.mantle}" a11y-syscolor="window"/><color id="text" rgb="${c.text}" a11y-syscolor="windowtext"/></tooltip>
+<candidate-window padding="4,4,4,4" gap="2">
+<color id="activeIconColor" rgb="${c.text}" a11y-syscolor="windowtext"/><color id="pressedIconColor" rgb="${c.text}" a11y-syscolor="highlighttext"/><color id="disabledIconColor" rgba="${c.overlay0},150" a11y-syscolor="graytext"/><color id="hoverBackgroundColor" rgb="${c.surface0}" a11y-syscolor="highlight"/>
+<header><font size="14" line-height="20" family="Microsoft YaHei UI"/><color id="text" rgb="${c.subtext1}" a11y-syscolor="windowtext"/></header>
+<candidate-string padding="6,4,8,4" min-width="32" min-height="30"><font size="16" line-height="22" family="Microsoft YaHei UI"/><font id="index" size="16" line-height="22" family="Microsoft YaHei UI"/>
+<color id="text" rgb="${c.text}" a11y-syscolor="windowtext"/><color id="index" rgb="${c.subtext0}" a11y-syscolor="graytext"/><background corner-radius="8"><color id="fill" rgba="0,0,0,0"/></background>
+<state id="down"><color id="text" rgb="${c.text}"/><color id="index" rgb="${c.subtext0}"/><background><color id="fill" rgb="${c.surface1}"/></background></state>
+<state id="highlight"><color id="text" rgb="${c.crust}"/><color id="index" rgb="${c.crust}"/><background><color id="fill" rgb="${c.lavender}"/></background></state>
+<state id="highlight-down"><color id="text" rgb="${c.crust}"/><color id="index" rgb="${c.crust}"/><background><color id="fill" rgb="${c.blue}"/></background></state>
+<state id="hover"><color id="text" rgb="${c.text}"/><color id="index" rgb="${c.subtext0}"/><background><color id="fill" rgb="${c.surface0}"/></background></state></candidate-string>
+<separator><color id="face" rgba="${c.surface1},128" a11y-syscolor="graytext"/></separator>
+<symbol-button id="pageup"><symbol><path viewBox="0 0 16 16" d="M9.42784 11.8403C10.0909 12.2987 10.9989 11.8272 10.9989 11.0244V4.9756C10.9989 4.17287 10.0909 3.70133 9.42784 4.15974L5.64342 6.77622C4.78555 7.36933 4.78555 8.6307 5.64342 9.22382L9.42784 11.8403Z"/></symbol><color id="symbol" ref="activeIconColor"/><background frame-thickness="0"/>
+<state id="hover"><background corner-radius="8"><color id="face" ref="hoverBackgroundColor"/></background></state><state id="down"><color id="symbol" ref="pressedIconColor"/><background corner-radius="8"><color id="face" ref="hoverBackgroundColor"/></background></state><state id="disabled"><color id="symbol" ref="disabledIconColor"/></state></symbol-button>
+<symbol-button id="pagedown"><symbol><path viewBox="0 0 16 16" d="M7.57107 11.8403C6.90803 12.2987 6 11.8272 6 11.0244V4.9756C6 4.17287 6.90803 3.70133 7.57106 4.15974L11.3555 6.77622C12.2133 7.36933 12.2134 8.6307 11.3555 9.22382L7.57107 11.8403Z"/></symbol><color id="symbol" ref="activeIconColor"/><background frame-thickness="0"/>
+<state id="hover"><background corner-radius="8"><color id="face" ref="hoverBackgroundColor"/></background></state><state id="down"><color id="symbol" ref="pressedIconColor"/><background corner-radius="8"><color id="face" ref="hoverBackgroundColor"/></background></state></symbol-button>
+</candidate-window>
+<annotation-window padding="12,8,12,12" gap="4" max-width="362"><annotation-text><font size="14" line-height="20" family="Microsoft YaHei UI"/><color id="text" rgba="${c.subtext0},200" a11y-syscolor="windowtext"/></annotation-text></annotation-window>
+</skin>`}
+
+const $=s=>document.querySelector(s);
+const kids=(e,t)=>e?[...e.children].filter(x=>x.localName===t):[];
+const A=(e,n,d='')=>e&&e.hasAttribute(n)?e.getAttribute(n):d;
+const num=(v,d=0)=>{const n=parseFloat(v);return isNaN(n)?d:n};
+const box=v=>{const a=(v||'').split(',').map(Number);return a.length===4&&a.every(n=>!isNaN(n))?a:[0,0,0,0]};
+const cssPad=b=>`${b[1]}px ${b[2]}px ${b[3]}px ${b[0]}px`;
+const HC={window:'#000',windowtext:'#fff',highlight:'#1aebff',highlighttext:'#000',graytext:'#3ff23f'};
+const FB=',"PingFang SC","Noto Sans CJK SC","Microsoft YaHei",sans-serif';
+let doc=null,imgs={},scopeCW=null,xmlName='',origText='';
+
+let _hlIds=new WeakMap(),_hlXml=new Map(),_hlN=0;
+function hlId(el){if(!el)return'';let id=_hlIds.get(el);if(!id){id='h'+(++_hlN);_hlIds.set(el,id);_hlXml.set(id,el)}return id}
+function hlReset(){_hlN=0;_hlIds=new WeakMap();_hlXml.clear();hlClear()}
+function hlClear(){document.querySelectorAll('.hl-pv,.hl-ed,.hl-grp').forEach(e=>e.classList.remove('hl-pv','hl-ed','hl-grp'))}
+function hlDescIds(id){const s=new Set([id]),el=_hlXml.get(id);if(!el)return s;const w=n=>{const c=_hlIds.get(n);if(c)s.add(c);[...n.children].forEach(w)};[...el.children].forEach(w);return s}
+function hlAncIds(id){const s=new Set([id]);let el=_hlXml.get(id);while(el&&el.parentElement){el=el.parentElement;const p=_hlIds.get(el);if(p)s.add(p)}return s}
+function hlFromPv(id){hlClear();if(!id)return;const desc=hlDescIds(id);let first=null;
+  desc.forEach(tid=>{document.querySelectorAll(`details[data-hl-grp="${tid}"]`).forEach(d=>{d.classList.add('hl-grp');d.open=true;if(!first)first=d});
+  document.querySelectorAll(`.erow[data-hl="${tid}"]`).forEach(r=>{r.classList.add('hl-ed');if(!first)first=r})});
+  if(first){const ed=first.closest('.editor');if(ed&&ed.scrollHeight>ed.clientHeight)first.scrollIntoView({behavior:'smooth',block:'nearest'})}}
+function hlFromEd(grpId){hlClear();if(!grpId)return;const anc=hlAncIds(grpId);
+  for(const aid of anc){const pvEls=[...document.querySelectorAll(`[data-hl="${aid}"]`)].filter(e=>e.closest('#stage,#exbox,#extras'));
+  if(pvEls.length){pvEls.forEach(e=>e.classList.add('hl-pv'));return}}}
+
+function h(tag,style,text){const e=document.createElement(tag);if(style)Object.assign(e.style,style);if(text!=null)e.textContent=text;return e}
+
+function col(c){
+  if(!c)return null;
+  if(c.hasAttribute('ref')){const r=kids(scopeCW,'color').find(x=>A(x,'id')===A(c,'ref'));return r&&r!==c?col(r):null}
+  const sys=A(c,'a11y-syscolor');
+  if($('#hc').checked&&HC[sys])return HC[sys];
+  const v=(A(c,'rgba')||A(c,'rgb')).split(',').map(Number);
+  if(v.length<3||v.some(isNaN))return null;
+  return `rgba(${v[0]},${v[1]},${v[2]},${v.length>3?+(v[3]/255).toFixed(3):1})`;
+}
+function cmap(el,st){
+  const m={};kids(el,'color').forEach(c=>m[A(c,'id')]=c);
+  const s=st&&kids(el,'state').find(x=>A(x,'id')===st);
+  if(s)kids(s,'color').forEach(c=>m[A(c,'id')]=c);
+  return m;
+}
+function bgOf(el,st){
+  const pick=b=>kids(b,'color').find(c=>/^(fill|face)$/.test(A(c,'id')));
+  const b=kids(el,'background')[0];
+  const out={r:num(A(b,'corner-radius')),fill:b?col(pick(b)):null};
+  const s=st&&kids(el,'state').find(x=>A(x,'id')===st);
+  const sb=s&&kids(s,'background')[0];
+  if(sb){if(sb.hasAttribute('corner-radius'))out.r=num(A(sb,'corner-radius'));const f=pick(sb);if(f)out.fill=col(f)}
+  return out;
+}
+function fontCss(el,id){
+  const f=kids(el,'font').find(x=>A(x,'id')===(id||''));
+  if(!f)return {};
+  return {fontSize:num(A(f,'size'),14)+'px',lineHeight:A(f,'line-height')?A(f,'line-height')+'px':'normal',
+    fontFamily:`"${A(f,'family')}"`+FB,fontWeight:A(f,'style')==='bold'?700:400,textDecoration:A(f,'style')==='underline'?'underline':'none'};
+}
+function setStatus(lines){$('#status').innerHTML=lines.map(l=>l.bad?`<span class="bad">${l.t}</span>`:l.t).join('\n')}
+
+function render(){
+  const st=$('#stage'),ex=$('#extras');st.innerHTML='';ex.innerHTML='';
+  if(!doc){return}
+  const root=doc.documentElement,iw=kids(root,'input-window')[0],cw=kids(root,'candidate-window')[0];
+  scopeCW=cw;
+  const msg=[{t:`皮肤：${A(root,'name','(未命名)')}　版本 ${A(root,'version','?')}　作者 ${A(root,'author','?')}　文件 ${xmlName}`}];
+  if(!iw||!cw){msg.push({t:'XML 中缺少 input-window 或 candidate-window，无法渲染。',bad:1});setStatus(msg);return}
+  const missing=[];
+
+  const win=h('div',{position:'relative',display:'inline-flex',flexDirection:'column',gap:num(A(iw,'gap'))+'px',padding:cssPad(box(A(iw,'padding')))});
+  win.dataset.hl=hlId(iw);
+  const bgl=h('div',{position:'absolute',pointerEvents:'none'});win.append(bgl);
+  const bge=kids(iw,'background')[0],si=bge&&bge.querySelector('stretchable-image');
+  const src=si&&imgs[A(si,'source')];
+  if(si&&!src)missing.push(A(si,'source'));
+  if(src){
+    const hs=A(si,'horizontal-stretch-param').split(',').map(Number),vs=A(si,'vertical-stretch-param').split(',').map(Number);
+    const l=hs[0]||0,r=hs[1]||0,t=vs[0]||0,b=vs[1]||0;
+    Object.assign(bgl.style,{inset:'0',borderStyle:'solid',borderWidth:`${t}px ${r}px ${b}px ${l}px`,
+      borderImage:`url("${src}") ${t} ${r} ${b} ${l} fill / ${t}px ${r}px ${b}px ${l}px / 0 ${rp(A(si,'horizontal-stretch-type'))} ${rp(A(si,'vertical-stretch-type'))}`});
+  }else{
+    const cm=cmap(bge);
+    Object.assign(bgl.style,{inset:cssPad(box(A(iw,'padding'))),background:col(cm.face)||'#fff',
+      border:`${num(A(bge,'frame-thickness'),1)}px solid ${col(cm.frame)||'transparent'}`,borderRadius:num(A(bge,'corner-radius'))+'px',
+      boxShadow:'0 8px 24px rgba(0,0,0,.18),0 0 2px rgba(0,0,0,.2)'});
+  }
+
+  const hd=kids(cw,'header')[0];
+  const hdDiv=h('div',{position:'relative',padding:'6px 12px 0',...fontCss(hd),color:col(cmap(hd).text)||'#000'},$('#pinyin').value);hdDiv.dataset.hl=hlId(hd);win.append(hdDiv);
+  const row=h('div',{position:'relative',display:'flex',alignItems:'center',gap:num(A(cw,'gap'))+'px',padding:cssPad(box(A(cw,'padding')))});
+  row.dataset.hl=hlId(cw);win.append(row);
+
+  const cs=kids(cw,'candidate-string')[0];
+  const words=$('#cands').value.split(/[,，]/).map(s=>s.trim()).filter(Boolean);
+  const items=words.map((w,i)=>({i,w,sel:i===0,hover:false,down:false}));
+  const paintC=it=>{
+    const s=it.sel&&it.down?'highlight-down':it.sel?'highlight':it.down?'down':it.hover?'hover':'';
+    const m=cmap(cs,s),bg=bgOf(cs,s);
+    it.el.style.background=bg.fill||'transparent';it.el.style.borderRadius=bg.r+'px';
+    it.idx.style.color=col(m.index)||'#666';it.txt.style.color=col(m.text)||'#000';
+  };
+  if(cs)items.forEach(it=>{
+    const el=h('div',{display:'flex',alignItems:'center',gap:'4px',cursor:'pointer',userSelect:'none',
+      padding:cssPad(box(A(cs,'padding'))),minWidth:num(A(cs,'min-width'))+'px',minHeight:num(A(cs,'min-height'))+'px'});
+    it.idx=h('span',fontCss(cs,'index'),String(it.i+1)+'.');
+    it.txt=h('span',fontCss(cs),it.w);
+    el.append(it.idx,it.txt);it.el=el;el.dataset.hl=hlId(cs);row.append(el);
+    el.onmouseenter=()=>{it.hover=true;paintC(it)};
+    el.onmouseleave=()=>{it.hover=false;it.down=false;paintC(it)};
+    el.onmousedown=()=>{it.down=true;paintC(it)};
+    el.onmouseup=()=>{it.down=false;paintC(it)};
+    el.onclick=()=>{items.forEach(o=>{o.sel=o===it;paintC(o)})};
+    paintC(it);
+  });else msg.push({t:'缺少 candidate-string，未渲染候选项。',bad:1});
+
+  const sp=kids(cw,'separator')[0];
+  if(sp){const spDiv=h('div',{width:'1px',height:'16px',margin:'0 4px',background:col(cmap(sp).face)||'#ccc'});spDiv.dataset.hl=hlId(sp);row.append(spDiv)}
+  ['pageup','pagedown','emoji','expand-collapse'].forEach((id,n)=>{
+    const sb=kids(cw,'symbol-button').find(x=>A(x,'id')===id);if(!sb)return;
+    const sym=kids(sb,'symbol')[0],path=sym&&sym.querySelector('path');if(!path)return;
+    const vb=A(path,'viewBox','0 0 16 16');
+    const b={el:h('div',{width:'32px',height:'30px',display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer'}),dis:n===0,hover:false,down:false};
+    b.el.innerHTML=`<svg width="16" height="16" viewBox="${vb}"><path d="${A(path,'d')}"/></svg>`;
+    const paintB=()=>{
+      const s=b.dis?'disabled':b.down?'down':b.hover?'hover':'',bg=bgOf(sb,s);
+      b.el.style.background=bg.fill||'transparent';b.el.style.borderRadius=bg.r+'px';
+      b.el.querySelector('path').setAttribute('fill',col(cmap(sb,s).symbol)||'#000');
+    };
+    if(!b.dis){
+      b.el.onmouseenter=()=>{b.hover=true;paintB()};b.el.onmouseleave=()=>{b.hover=false;b.down=false;paintB()};
+      b.el.onmousedown=()=>{b.down=true;paintB()};b.el.onmouseup=()=>{b.down=false;paintB()};
+    }else b.el.style.cursor='default';
+    b.el.title=id;b.el.dataset.hl=hlId(sb);row.append(b.el);paintB();
+  });
+  st.append(win);
+
+  const tt=kids(root,'tooltip')[0];
+  if(tt){const m=cmap(tt),d=h('div',{padding:cssPad(box(A(tt,'padding'))),borderRadius:num(A(tt,'corner-radius'))+'px',...fontCss(tt),
+    background:col(m.background)||'#fff',color:col(m.text)||'#000',boxShadow:'0 2px 8px rgba(0,0,0,.2)',border:'1px solid rgba(0,0,0,.08)'},'提示文字示例');
+    d.dataset.hl=hlId(tt);const w=h('div');w.append(Object.assign(h('small'),{textContent:'tooltip'}),d);ex.append(w)}
+  const aw=kids(root,'annotation-window')[0],at=kids(aw,'annotation-text')[0];
+  if(aw&&at){const d=h('div',{padding:cssPad(box(A(aw,'padding'))),maxWidth:num(A(aw,'max-width'),362)+'px',...fontCss(at),
+    color:col(cmap(at).text)||'#000',background:'#fff',borderRadius:'8px',boxShadow:'0 2px 8px rgba(0,0,0,.2)',border:'1px solid rgba(0,0,0,.08)'},'注释文字示例，用来检查字号、行高和透明度。');
+    d.dataset.hl=hlId(aw);const w=h('div');w.append(Object.assign(h('small'),{textContent:'annotation-window'}),d);ex.append(w)}
+
+  renderMore(root,missing);
+  const names=Object.keys(imgs);
+  msg.push({t:'已载入图片：'+(names.join('、')||'无')});
+  if(missing.length)msg.push({t:'缺少图片 '+missing.join('、')+'，输入窗背景改用 XML 里的 face/frame 颜色近似显示。',bad:1});
+  setStatus(msg);
+}
+
+function loadXml(text,name){
+  const d=new DOMParser().parseFromString(text,'application/xml');
+  if(d.querySelector('parsererror')){doc=null;$('#stage').innerHTML='';$('#extras').innerHTML='';setStatus([{t:'XML 解析失败：'+d.querySelector('parsererror').textContent.slice(0,200),bad:1}]);return}
+  doc=d;xmlName=name;origText=text;hlReset();buildEditor();render();
+}
+const NUM=new Set(['padding','margin','gap','button-gap','text-gap','text-padding','corner-radius','frame-thickness','min-width','min-height','max-width','width','size','button-row-padding','focus-frame','line-height','horizontal-stretch-param','vertical-stretch-param']);
+const TXT=new Set(['family','style','source']);
+const NUMRE=/^-?\d+(\.\d+)?(,-?\d+(\.\d+)?)*$/;
+const L4=['左','上','右','下'],L2=['起','止'];
+const nice=e=>{const id=A(e,'id');return e.localName+(id?`[${id}]`:'')};
+const rel=(e,base)=>{const p=[];for(let n=e;n&&n!==base;n=n.parentElement)p.unshift(nice(n));return p.join(' › ')};
+function nums(el,attr){
+  const vals=A(el,attr).split(',').map(Number),names=vals.length===4?L4:vals.length===2?L2:[attr];
+  const w=h('span',{display:'inline-flex',gap:'4px'});
+  vals.forEach((v,i)=>{const n=document.createElement('input');n.type='number';n.step='any';n.value=v;n.title=names[i];
+    n.oninput=()=>{el.setAttribute(attr,[...w.querySelectorAll('input')].map(x=>x.value===''?0:+x.value).join(','));render()};w.append(n)});
+  return w;
+}
+function txt(el,attr){const i=document.createElement('input');i.type='text';i.value=A(el,attr);i.oninput=()=>{el.setAttribute(attr,i.value);render()};return i}
+function colorCtl(el){
+  const k=el.hasAttribute('rgba')?'rgba':'rgb',v=A(el,k).split(',').map(Number);
+  const c=document.createElement('input');c.type='color';
+  c.value='#'+v.slice(0,3).map(n=>Math.max(0,Math.min(255,n|0)).toString(16).padStart(2,'0')).join('');
+  const a=document.createElement('input');a.type='range';a.min=0;a.max=255;a.value=v.length>3?v[3]:255;a.title='不透明度';
+  const out=h('span',{fontSize:'12px',color:'var(--mute)',minWidth:'26px'},a.value);
+  const upd=()=>{const r=parseInt(c.value.slice(1,3),16),g=parseInt(c.value.slice(3,5),16),b=parseInt(c.value.slice(5,7),16),al=+a.value;out.textContent=al;
+    el.removeAttribute('rgb');el.removeAttribute('rgba');
+    if(al===255&&k==='rgb')el.setAttribute('rgb',`${r},${g},${b}`);else el.setAttribute('rgba',`${r},${g},${b},${al}`);render()};
+  c.oninput=upd;a.oninput=upd;
+  const w=h('span',{display:'inline-flex',gap:'6px',alignItems:'center'});w.append(c,a,out);return w;
+}
+function buildEditor(){
+  const host=$('#editor');host.innerHTML='';
+  const root=doc.documentElement,groups=new Map();
+  const grp=key=>{let d=groups.get(key);if(!d){d=document.createElement('details');
+    d.open=/^(input-window|tooltip|annotation-window)/.test(key)||/candidate-string/.test(key);
+    const s=document.createElement('summary');s.textContent=key;d.append(s);groups.set(key,d);host.append(d)}return d};
+  const row=(key,e,base,attr,ctl)=>{const r=h('div');r.className='erow';r.dataset.hl=hlId(e);
+    const lb=h('span',null,rel(e,base)||'(本节点)');lb.className='lb';
+    const at=h('span',null,attr);at.className='at';lb.append(at);r.append(lb,ctl);const g=grp(key);if(!g.dataset.hlGrp)g.dataset.hlGrp=hlId(base);g.append(r)};
+  [root,...root.querySelectorAll('*')].forEach(e=>{
+    const chain=[];for(let n=e;n&&n!==root;n=n.parentElement)chain.unshift(n);
+    let key,base;
+    if(e===root){key='skin 信息';base=root}
+    else if(chain.length===1){key=nice(chain[0]);base=chain[0]}
+    else{key=`${nice(chain[0])} › ${nice(chain[1])}`;base=chain[1]}
+    [...e.attributes].forEach(at=>{
+      const n=at.name,v=at.value;
+      if(e===root){if(['name','author','version','info'].includes(n))row(key,e,base,n,txt(e,n));return}
+      if(NUM.has(n)&&NUMRE.test(v))row(key,e,base,n,nums(e,n));
+      else if(n==='source'&&e.localName==='stretchable-image')row(key,e,base,'图片素材',imgCtl(e));
+      else if(n==='horizontal-stretch-type'||n==='vertical-stretch-type')row(key,e,base,n,selCtl(e,n,['stretch','tile']));
+      else if(TXT.has(n))row(key,e,base,n,txt(e,n));
+      else if(n==='rgb'||n==='rgba')row(key,e,base,'颜色',colorCtl(e));
+      else if(n==='ref')row(key,e,base,'引用',h('span',{fontSize:'12px',color:'var(--mute)'},'→ '+v));
+    });
+  });
+}
+let MISS=[];
+const rp=v=>v==='tile'?'round':'stretch';
+function selCtl(el,attr,opts){const x=document.createElement('select');opts.forEach(o=>x.add(new Option(o,o)));x.value=A(el,attr)||opts[0];x.onchange=()=>{el.setAttribute(attr,x.value);render()};return x}
+function imgCtl(el){
+  const w=h('div',{display:'flex',flexDirection:'column',gap:'4px',alignItems:'flex-start'});
+  const t=txt(el,'source'),cap=h('span',{fontSize:'12px',color:'var(--mute)'});
+  const th=h('div',{background:'conic-gradient(#e6e6e6 25%,#fff 0 50%,#e6e6e6 0 75%,#fff 0) 0 0/12px 12px',padding:'4px',borderRadius:'4px',border:'1px solid var(--line)'});
+  const show=()=>{th.innerHTML='';const u=imgs[A(el,'source')];
+    if(u){const i=document.createElement('img');i.src=u;i.style.cssText='max-width:220px;max-height:90px;display:block';i.onload=()=>{cap.textContent=`${i.naturalWidth}×${i.naturalHeight}px`};th.append(i)}
+    else cap.textContent='未载入此图片，请在下面选择文件'};
+  const f=document.createElement('input');f.type='file';f.accept='image/*';
+  f.onchange=()=>{const file=f.files[0];if(!file)return;const fr=new FileReader();
+    fr.onload=()=>{imgs[file.name]=fr.result;el.setAttribute('source',file.name);t.value=file.name;show();render()};fr.readAsDataURL(file)};
+  t.oninput=()=>{el.setAttribute('source',t.value);show();render()};
+  w.append(t,th,cap,f);show();return w;
+}
+function bgOf2(el,st){
+  const g=(b,id)=>kids(b,'color').find(c=>A(c,'id')===id);
+  const b=kids(el,'background')[0],s=st&&kids(el,'state').find(x=>A(x,'id')===st),sb=s&&kids(s,'background')[0],o=sb||b;
+  const pk=id=>col(g(sb,id))||col(g(b,id));
+  return {r:num(A(o,'corner-radius')),ft:num(A(o,'frame-thickness')),fill:pk('face')||pk('fill'),frame:pk('frame')};
+}
+function iconSvg(sym,color,sz){
+  const ps=[...(sym?sym.querySelectorAll('path'):[])];if(!ps.length)return '';
+  return `<svg width="${sz||16}" height="${sz||16}" viewBox="${A(ps[0],'viewBox','0 0 16 16')}">`+ps.map(p=>`<path d="${A(p,'d')}" fill="${color}"/>`).join('')+'</svg>';
+}
+function frameBox(bgEl,pad,inner){
+  const win=h('div',{position:'relative',display:'inline-flex',flexDirection:'column',padding:cssPad(pad)});
+  const l=h('div',{position:'absolute',pointerEvents:'none'});win.append(l);
+  const si=bgEl&&bgEl.querySelector('stretchable-image'),src=si&&imgs[A(si,'source')];
+  if(si&&!src&&!MISS.includes(A(si,'source')))MISS.push(A(si,'source'));
+  if(src){
+    const hs=A(si,'horizontal-stretch-param').split(',').map(Number),vs=A(si,'vertical-stretch-param').split(',').map(Number);
+    const a=hs[0]||0,r=hs[1]||0,t=vs[0]||0,b=vs[1]||0;
+    Object.assign(l.style,{inset:'0',borderStyle:'solid',borderWidth:`${t}px ${r}px ${b}px ${a}px`,
+      borderImage:`url("${src}") ${t} ${r} ${b} ${a} fill / ${t}px ${r}px ${b}px ${a}px / 0 ${rp(A(si,'horizontal-stretch-type'))} ${rp(A(si,'vertical-stretch-type'))}`});
+  }else{
+    const cm=cmap(bgEl);
+    Object.assign(l.style,{inset:cssPad(pad),background:col(cm.face)||'#fff',border:`${num(A(bgEl,'frame-thickness'))}px solid ${col(cm.frame)||'transparent'}`,
+      borderRadius:num(A(bgEl,'corner-radius'))+'px',boxShadow:'0 8px 24px rgba(0,0,0,.18),0 0 2px rgba(0,0,0,.2)'});
+  }
+  inner.style.position='relative';win.append(inner);return win;
+}
+function btn(def,label,o={}){
+  const el=h('div',{display:'inline-flex',alignItems:'center',justifyContent:'center',boxSizing:'border-box',userSelect:'none',
+    cursor:o.dis?'default':'pointer',padding:cssPad(box(A(def,'padding'))),...fontCss(def)},label);
+  let hv=false,dn=false;
+  const paint=()=>{const base=o.sel?'selected':'',s=o.dis?'disabled':dn?(base?base+'-down':'down'):hv?(base?base+'-hover':'hover'):base;
+    const bg=bgOf2(def,s);el.style.color=col(cmap(def,s).text)||'#000';el.style.background=bg.fill||'transparent';
+    el.style.borderRadius=bg.r+'px';el.style.border=bg.ft?`${bg.ft}px solid ${bg.frame||'transparent'}`:'0'};
+  if(!o.dis){el.onmouseenter=()=>{hv=true;paint()};el.onmouseleave=()=>{hv=dn=false;paint()};el.onmousedown=()=>{dn=true;paint()};el.onmouseup=()=>{dn=false;paint()}}
+  paint();return el;
+}
+function symBtn(sb,dis,sz){
+  const el=h('div',{width:(sz||28)+'px',height:(sz||28)+'px',display:'flex',alignItems:'center',justifyContent:'center',cursor:dis?'default':'pointer'});
+  let hv=false,dn=false;
+  const paint=()=>{const s=dis?'disabled':dn?'down':hv?'hover':'',bg=bgOf2(sb,s);
+    el.style.background=bg.fill||'transparent';el.style.borderRadius=bg.r+'px';el.innerHTML=iconSvg(kids(sb,'symbol')[0],col(cmap(sb,s).symbol)||'#000')};
+  if(!dis){el.onmouseenter=()=>{hv=true;paint()};el.onmouseleave=()=>{hv=dn=false;paint()};el.onmousedown=()=>{dn=true;paint()};el.onmouseup=()=>{dn=false;paint()}}
+  paint();return el;
+}
+function suggest(sw,bgIW,pad){
+  const res=kids(sw,'suggestion-results')[0],cs2=kids(res,'candidate-string')[0],ib=kids(res,'text-button')[0];
+  if(!cs2)return null;
+  const ti=kids(sw,'suggestions-title')[0],cont=kids(sw,'suggestions-container')[0],ft=kids(sw,'footer')[0],sp=kids(sw,'separator')[0];
+  const sbs=id=>kids(sw,'symbol-button').find(x=>A(x,'id')===id);
+  const body=h('div',{display:'flex',flexDirection:'column',minWidth:'320px'});
+  body.append(h('div',{padding:'6px 12px 0',...fontCss(ti),color:col(cmap(ti).text)||'#555'},'联想建议'));
+  const lst=h('div',{display:'flex',flexDirection:'column',padding:cssPad(box(A(cont,'padding'))),gap:num(A(cont,'gap'))+'px'});
+  const its=['你好，很高兴见到你','你好吗','你好呀'].map((w,i)=>({w,sel:i===0,hv:false,dn:false}));
+  const paint=it=>{
+    const s=it.sel&&it.dn?'highlight-down':it.sel?'highlight':it.dn?'down':it.hv?'hover':'',m=cmap(cs2,s),bg=bgOf2(cs2,s),tc=col(m.text)||'#000';
+    it.el.style.background=bg.fill||'transparent';it.el.style.borderRadius=bg.r+'px';it.tx.style.color=tc;
+    it.ico.innerHTML=iconSvg(kids(cs2,'symbol')[0],tc);
+    const st=kids(cs2,'state').find(x=>A(x,'id')===s),ac=st&&kids(st,'accent')[0];
+    it.ac.style.display=ac?'block':'none';
+    if(ac){const z=A(ac,'size','3,16').split(',').map(Number);Object.assign(it.ac.style,{width:z[0]+'px',height:z[1]+'px',borderRadius:num(A(ac,'corner-radius'))+'px',background:col(cmap(ac).fill)||'#000'})}
+    if(it.ib)it.ib.style.visibility=(it.sel||it.hv)?'visible':'hidden';
+  };
+  its.forEach(it=>{
+    const el=h('div',{position:'relative',display:'flex',alignItems:'center',cursor:'pointer',userSelect:'none',gap:num(A(cs2,'gap'))+'px',
+      padding:cssPad(box(A(cs2,'padding'))),margin:cssPad(box(A(cs2,'margin'))),minHeight:num(A(cs2,'min-height'))+'px'});
+    it.ac=h('div',{position:'absolute',left:'0',top:'50%',transform:'translateY(-50%)'});
+    it.ico=h('span',{display:'flex'});it.tx=h('span',{flex:'1',...fontCss(cs2)},it.w);
+    el.append(it.ac,it.ico,it.tx);
+    if(ib){it.ib=btn(ib,'插入');el.append(it.ib)}
+    it.el=el;el.dataset.hl=hlId(cs2);lst.append(el);
+    el.onmouseenter=()=>{it.hv=true;paint(it)};el.onmouseleave=()=>{it.hv=it.dn=false;paint(it)};
+    el.onmousedown=()=>{it.dn=true;paint(it)};el.onmouseup=()=>{it.dn=false;paint(it)};
+    el.onclick=()=>its.forEach(o=>{o.sel=o===it;paint(o)});
+    paint(it);
+  });
+  body.append(lst,h('div',{height:'1px',background:col(cmap(sp).face)||'#ddd'}));
+  const fo=h('div',{display:'flex',alignItems:'center',justifyContent:'space-between',padding:cssPad(box(A(ft,'padding')))});
+  const b1=sbs('bing-icon'),b2=sbs('settings-icon');
+  if(b1)fo.append(symBtn(b1,true));if(b2)fo.append(symBtn(b2,false));
+  body.append(fo);const _sf=frameBox(bgIW,pad,body);_sf.dataset.hl=hlId(sw);return _sf;
+}
+function menu(sw,bgEl,items){
+  const mi=kids(sw,'text-button').find(x=>A(x,'id')==='menu-item');
+  if(!bgEl||!mi)return null;
+  const list=h('div',{display:'flex',flexDirection:'column',padding:'6px',minWidth:'200px'});
+  items.forEach(([t,ic,dis,sel])=>{
+    const sb=kids(sw,'symbol-button').find(x=>A(x,'id')===ic),r=btn(mi,t,{dis,sel});
+    r.style.justifyContent='flex-start';r.style.position='relative';
+    const ico=h('span',{position:'absolute',left:'14px',top:'50%',transform:'translateY(-50%)',display:'flex'});
+    const ip=hv=>{ico.innerHTML=sb?iconSvg(kids(sb,'symbol')[0],col(cmap(sb,dis?'disabled':hv?'hover':'').symbol)||'#000'):''};
+    r.addEventListener('mouseenter',()=>ip(1));r.addEventListener('mouseleave',()=>ip(0));ip(0);
+    r.append(ico);r.dataset.hl=hlId(mi);list.append(r);
+  });
+  const _mf=frameBox(bgEl,box(A(bgEl,'margin')),list);_mf.dataset.hl=hlId(bgEl);return _mf;
+}
+function turnOn(tp,bgIW,pad){
+  const tr=kids(tp,'text-region')[0],ti=kids(tr,'title')[0],su=kids(tr,'subtitle')[0];
+  const body=h('div',{display:'flex',flexDirection:'column',gap:num(A(tp,'gap'))+'px',padding:cssPad(box(A(tp,'padding')))});
+  const tx=h('div',{width:num(A(tr,'width'),400)+'px',maxWidth:'100%',display:'flex',flexDirection:'column',gap:num(A(tp,'text-gap'))+'px',padding:cssPad(box(A(tp,'text-padding')))});
+  tx.append(h('div',{...fontCss(ti),color:col(cmap(ti).text)||'#000'},'开启 AI 智能输入建议'),
+    h('div',{...fontCss(su),color:col(cmap(su).text)||'#444'},'输入时获得联想补全和改写建议，可随时在设置中关闭。'));
+  const br=h('div',{display:'flex',gap:num(A(tp,'button-gap'))+'px',padding:cssPad(box(A(tp,'button-row-padding')))});
+  [['action-button','开启'],['not-now-button','暂不'],['link-button','了解更多']].forEach(([id,t])=>{const d=kids(tp,id)[0];if(d)br.append(btn(d,t))});
+  body.append(tx,br);const _tf=frameBox(bgIW,pad,body);_tf.dataset.hl=hlId(tp);return _tf;
+}
+function renderMore(root,missing){
+  MISS=missing;const ex=$('#extras');
+  const iw=kids(root,'input-window')[0],bgIW=kids(iw,'background')[0],pad=box(A(iw,'padding'));
+  const add=(t,node)=>{if(!node)return;const w=h('div');const sm=document.createElement('small');sm.textContent=t;w.append(sm,node);ex.append(w)};
+  const sw=kids(root,'suggestion-window')[0],tp=kids(root,'turn-on-panel')[0];
+  if(sw){
+    add('suggestion-window（外框沿用 input-window 背景，属推测）',suggest(sw,bgIW,pad));
+    add('menu',menu(sw,kids(sw,'menu-background')[0],[['中文 / 英文','menu-check',0,0],['全角 / 半角','menu-check',0,0],['输入设置','menu-settings',0,1],['打开词库文件夹','menu-open',0,0],['反馈问题','menu-feedback',1,0]]));
+    add('tray-menu',menu(sw,kids(sw,'tray-menu-background')[0],[['输入法设置','menu-settings',0,0],['打开词库文件夹','menu-open',0,0],['反馈问题','menu-feedback',0,0]]));
+  }
+  if(tp)add('turn-on-panel（外框沿用 input-window 背景，属推测）',turnOn(tp,bgIW,pad));
+}
+$('#reset').onclick=()=>{if(origText)loadXml(origText,xmlName)};
+$('#export').onclick=()=>{
+  if(!doc)return;
+  const s=new XMLSerializer().serializeToString(doc).replace(/^<\?xml[^>]*\?>\s*/,'');
+  const o=$('#out');o.value='<?xml version="1.0" encoding="utf-8"?>\n'+s;o.hidden=false;o.select();$('#copied').textContent='';
+};
+$('#copy').onclick=async()=>{
+  const o=$('#out');if(o.hidden||!o.value)$('#export').onclick();
+  o.select();
+  try{await navigator.clipboard.writeText(o.value);$('#copied').textContent='已复制'}
+  catch(e){$('#copied').textContent='已选中全部内容，请按 Ctrl+C 复制'}
+};
+$('#xml').onchange=e=>{const f=e.target.files[0];if(f)f.text().then(t=>{$('#autoTheme').checked=false;$('#presets').value='';loadXml(t,f.name)})};
+$('#png').onchange=e=>{
+  Promise.all([...e.target.files].map(f=>new Promise(r=>{const fr=new FileReader();fr.onload=()=>{imgs[f.name]=fr.result;r()};fr.readAsDataURL(f)}))).then(render);
+};
+const _mq=window.matchMedia('(prefers-color-scheme:dark)');
+function loadPreset(k){if(k==='sample'){loadXml(SAMPLE,'内置示例');$('#bg').value='light';$('#bg').onchange({target:$('#bg')});return}
+  if(MAC[k]){loadXml(macSkin(MAC[k].dark),MAC[k].name+'.xml');$('#bg').value=MAC[k].dark?'dark':'light';$('#bg').onchange({target:$('#bg')});return}
+  const c=CAT[k];if(!c)return;loadXml(catSkin(c),c.name+'.xml');$('#bg').value=c.dark?'dark':'light';$('#bg').onchange({target:$('#bg')})}
+function autoTheme(){if(!$('#autoTheme').checked)return;const k=_mq.matches?'mocha':'latte';$('#presets').value=k;loadPreset(k)}
+$('#presets').onchange=e=>{if(e.target.value){$('#autoTheme').checked=false;loadPreset(e.target.value)}};
+$('#autoTheme').onchange=()=>{if($('#autoTheme').checked)autoTheme()};
+_mq.addEventListener('change',()=>{if($('#autoTheme').checked)autoTheme()});
+['pinyin','cands'].forEach(id=>$('#'+id).oninput=render);
+$('#hc').onchange=render;
+$('#bg').onchange=e=>{['stagebox','exbox'].forEach(i=>$('#'+i).className='stage '+e.target.value)};
+$('#zoom').oninput=e=>{const z=+e.target.value;$('#zw').style.transform=`scale(${z})`;$('#zv').textContent=Math.round(z*100)+'%';
+  const w=$('#zw');w.parentElement.style.minHeight='';requestAnimationFrame(()=>{w.parentElement.style.minHeight=(w.offsetHeight*z+56)+'px'})};
+$('#zoom').oninput({target:$('#zoom')});
+autoTheme();
+let _hlAct=null;
+document.addEventListener('mouseover',e=>{
+  const hlEl=e.target.closest('[data-hl]');
+  if(hlEl){
+    if(hlEl.closest('#stage,#exbox,#extras')){if(_hlAct===hlEl)return;_hlAct=hlEl;hlFromPv(hlEl.dataset.hl);return}
+    if(hlEl.closest('.editor')&&hlEl.classList.contains('erow')){if(_hlAct===hlEl)return;_hlAct=hlEl;const g=hlEl.closest('details[data-hl-grp]');hlFromEd(g?g.dataset.hlGrp:'');return}
+  }
+  const edSum=e.target.closest('.editor summary');
+  if(edSum){const d=edSum.parentElement;if(d&&d.dataset.hlGrp){if(_hlAct===d)return;_hlAct=d;hlFromEd(d.dataset.hlGrp);return}}
+  if(_hlAct){_hlAct=null;hlClear()}
+});
+</script>
+</body>
+</html>
