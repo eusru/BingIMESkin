@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<skin name="macOS Dark" version="2.0" author="macOS Style" xmlns="http://schemas.microsoft.com/ime/skin/1.0">
+<input-window padding="16,8,16,24" gap="0"><background corner-radius="10" frame-thickness="0"><color id="face" rgba="40,40,40,250" a11y-syscolor="window"/><color id="frame" rgba="255,255,255,30" a11y-syscolor="windowtext"/></background></input-window>
+<tooltip padding="8,5,8,5" corner-radius="6"><font family="Microsoft YaHei" size="12" line-height="16" style="regular"/><color id="background" rgb="30,30,30" a11y-syscolor="window"/><color id="text" rgb="255,255,255" a11y-syscolor="windowtext"/></tooltip>
+<candidate-window padding="6,4,6,4" gap="0">
+<color id="activeIconColor" rgb="255,255,255" a11y-syscolor="windowtext"/><color id="pressedIconColor" rgb="255,255,255" a11y-syscolor="highlighttext"/><color id="disabledIconColor" rgba="100,100,100,140" a11y-syscolor="graytext"/><color id="hoverBackgroundColor" rgba="255,255,255,20" a11y-syscolor="highlight"/>
+<header><font size="13" line-height="18" family="Microsoft YaHei UI"/><color id="text" rgb="200,200,200" a11y-syscolor="windowtext"/></header>
+<candidate-string padding="4,4,6,4" min-width="28" min-height="28"><font size="16" line-height="22" family="Microsoft YaHei UI"/><font id="index" size="14" line-height="20" family="Microsoft YaHei UI"/>
+<color id="text" rgb="255,255,255" a11y-syscolor="windowtext"/><color id="index" rgb="170,170,170" a11y-syscolor="graytext"/><background corner-radius="6"><color id="fill" rgba="0,0,0,0"/></background>
+<state id="down"><color id="text" rgb="255,255,255"/><color id="index" rgb="170,170,170"/><background><color id="fill" rgba="255,255,255,30"/></background></state>
+<state id="highlight"><color id="text" rgb="255,255,255"/><color id="index" rgb="255,255,255"/><background><color id="fill" rgb="0,122,255"/></background></state>
+<state id="highlight-down"><color id="text" rgb="255,255,255"/><color id="index" rgb="255,255,255"/><background><color id="fill" rgb="0,105,220"/></background></state>
+<state id="hover"><color id="text" rgb="255,255,255"/><color id="index" rgb="170,170,170"/><background><color id="fill" rgba="255,255,255,20"/></background></state></candidate-string>
+<separator><color id="face" rgba="255,255,255,40" a11y-syscolor="graytext"/></separator>
+<symbol-button id="pageup"><symbol><path viewBox="0 0 16 16" d="M9.42784 11.8403C10.0909 12.2987 10.9989 11.8272 10.9989 11.0244V4.9756C10.9989 4.17287 10.0909 3.70133 9.42784 4.15974L5.64342 6.77622C4.78555 7.36933 4.78555 8.6307 5.64342 9.22382L9.42784 11.8403Z"/></symbol><color id="symbol" ref="activeIconColor"/><background frame-thickness="0"/>
+<state id="hover"><background corner-radius="6"><color id="face" ref="hoverBackgroundColor"/></background></state><state id="down"><color id="symbol" ref="pressedIconColor"/><background corner-radius="6"><color id="face" ref="hoverBackgroundColor"/></background></state><state id="disabled"><color id="symbol" ref="disabledIconColor"/></state></symbol-button>
+<symbol-button id="pagedown"><symbol><path viewBox="0 0 16 16" d="M7.57107 11.8403C6.90803 12.2987 6 11.8272 6 11.0244V4.9756C6 4.17287 6.90803 3.70133 7.57106 4.15974L11.3555 6.77622C12.2133 7.36933 12.2134 8.6307 11.3555 9.22382L7.57107 11.8403Z"/></symbol><color id="symbol" ref="activeIconColor"/><background frame-thickness="0"/>
+<state id="hover"><background corner-radius="6"><color id="face" ref="hoverBackgroundColor"/></background></state><state id="down"><color id="symbol" ref="pressedIconColor"/><background corner-radius="6"><color id="face" ref="hoverBackgroundColor"/></background></state></symbol-button>
+</candidate-window>
+<annotation-window padding="12,8,12,12" gap="4" max-width="362"><annotation-text><font size="13" line-height="18" family="Microsoft YaHei UI"/><color id="text" rgba="180,180,180,200" a11y-syscolor="windowtext"/></annotation-text></annotation-window>
+</skin>
